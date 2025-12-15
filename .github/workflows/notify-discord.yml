@@ -1,0 +1,131 @@
+name: Discord Notify (Embed)
+
+on:
+  pull_request:
+    types: [opened, closed] # 생성/머지/닫힘
+  issues:
+    types: [opened] # 이슈 생성
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      REPO: ${{ github.repository }}
+      ACTOR: ${{ github.actor }}
+
+    steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq curl
+
+      - name: Notify PR Opened
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        run: |
+          jq -n \
+            --arg title "✨ New Pull Request" \
+            --arg url "${{ github.event.pull_request.html_url }}" \
+            --arg fromBranch "${{ github.event.pull_request.head.ref }}" \
+            --arg toBranch "${{ github.event.pull_request.base.ref }}" \
+            --arg number "#${{ github.event.pull_request.number }}" \
+            --arg prtitle "${{ github.event.pull_request.title }}" \
+            --arg author "${ACTOR}" \
+            '{
+              embeds: [
+                {
+                  title: $title,
+                  url: $url,
+                  color: 3447003, # 파란색
+                  fields: [
+                    {name: "📌 Repo", value: env.REPO, inline: true},
+                    {name: "🔢 PR", value: ($number + " - " + $prtitle), inline: false},
+                    {name: "🌿 From", value: $fromBranch, inline: true},
+                    {name: "🎯 To", value: $toBranch, inline: true},
+                    {name: "👤 Author", value: $author, inline: true}
+                  ]
+                }
+              ]
+            }' \
+          | curl -sS -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK"
+
+      - name: Notify PR Merged
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        run: |
+          jq -n \
+            --arg title "✅ Pull Request Merged" \
+            --arg url "${{ github.event.pull_request.html_url }}" \
+            --arg fromBranch "${{ github.event.pull_request.head.ref }}" \
+            --arg toBranch "${{ github.event.pull_request.base.ref }}" \
+            --arg number "#${{ github.event.pull_request.number }}" \
+            --arg prtitle "${{ github.event.pull_request.title }}" \
+            --arg author "${ACTOR}" \
+            '{
+              embeds: [
+                {
+                  title: $title,
+                  url: $url,
+                  color: 3066993, # 초록색
+                  fields: [
+                    {name: "📌 Repo", value: env.REPO, inline: true},
+                    {name: "🔢 PR", value: ($number + " - " + $prtitle), inline: false},
+                    {name: "🌿 From", value: $fromBranch, inline: true},
+                    {name: "🎯 To", value: $toBranch, inline: true},
+                    {name: "🧑‍💻 Merged by", value: $author, inline: true}
+                  ]
+                }
+              ]
+            }' \
+          | curl -sS -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK"
+
+      - name: Notify PR Closed (Not Merged)
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == false
+        run: |
+          jq -n \
+            --arg title "🛑 Pull Request Closed (Not Merged)" \
+            --arg url "${{ github.event.pull_request.html_url }}" \
+            --arg fromBranch "${{ github.event.pull_request.head.ref }}" \
+            --arg toBranch "${{ github.event.pull_request.base.ref }}" \
+            --arg number "#${{ github.event.pull_request.number }}" \
+            --arg prtitle "${{ github.event.pull_request.title }}" \
+            --arg author "${ACTOR}" \
+            '{
+              embeds: [
+                {
+                  title: $title,
+                  url: $url,
+                  color: 15158332, # 빨간색
+                  fields: [
+                    {name: "📌 Repo", value: env.REPO, inline: true},
+                    {name: "🔢 PR", value: ($number + " - " + $prtitle), inline: false},
+                    {name: "🌿 From", value: $fromBranch, inline: true},
+                    {name: "🎯 To", value: $toBranch, inline: true},
+                    {name: "👤 Closed by", value: $author, inline: true}
+                  ]
+                }
+              ]
+            }' \
+          | curl -sS -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK"
+
+      - name: Notify Issue Opened
+        if: github.event_name == 'issues' && github.event.action == 'opened'
+        run: |
+          jq -n \
+            --arg title "📝 New Issue" \
+            --arg url "${{ github.event.issue.html_url }}" \
+            --arg number "#${{ github.event.issue.number }}" \
+            --arg issuetitle "${{ github.event.issue.title }}" \
+            --arg author "${ACTOR}" \
+            '{
+              embeds: [
+                {
+                  title: $title,
+                  url: $url,
+                  color: 10181046, # 보라색
+                  fields: [
+                    {name: "📌 Repo", value: env.REPO, inline: true},
+                    {name: "🔢 Issue", value: ($number + " - " + $issuetitle), inline: false},
+                    {name: "👤 Author", value: $author, inline: true}
+                  ]
+                }
+              ]
+            }' \
+          | curl -sS -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK"

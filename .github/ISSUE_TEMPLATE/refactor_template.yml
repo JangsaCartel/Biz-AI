@@ -1,0 +1,55 @@
+name: '♻️ Refactor'
+description: '기존 코드 개선 및 구조 리팩토링 관련 템플릿'
+title: '[Refactor]: '
+labels: ['♻️ Refactor']
+body:
+  - type: textarea
+    attributes:
+      label: 💡 리팩토링 목적
+      description: 왜 리팩토링이 필요한가요? 배경이나 문제를 설명해주세요.
+      placeholder: 예) 코드 중복 제거, 가독성 향상, 성능 개선 등
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 🧩 기존 코드의 문제점
+      description: 현재 코드의 어떤 부분이 문제인가요?
+      placeholder: 구조가 복잡하거나 네이밍이 모호한 부분 등을 구체적으로 적어주세요. (이슈 번호 언급 권장)
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: 🔍 변경 대상 파일/모듈
+      description: 리팩토링 대상이 되는 파일명 또는 컴포넌트를 입력해주세요.
+      placeholder: 예) `UserService.java`, `MainLayout.vue`
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: ✅ 리팩토링 작업 내용
+      description: 어떤 방식으로 개선할 예정인가요? 할 일을 체크박스로 작성해주세요.
+      placeholder: |
+        - [ ] 함수 분리
+        - [ ] 중복 제거
+        - [ ] 네이밍 수정
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 🚀 기대 효과
+      description: 리팩토링 후 어떤 개선이 이루어질지 작성해주세요.
+      placeholder: 예) 유지보수성 향상, 로직 단순화, 성능 향상
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: 🙋🏻 참고 자료
+      description: 참고한 문서나 링크가 있다면 작성해주세요.
+      placeholder: 관련 이슈 링크, 컨벤션 문서 등
+    validations:
+      required: false

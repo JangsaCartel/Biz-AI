@@ -1,0 +1,27 @@
+name: '🐛 Bug'
+description: '버그 수정'
+title: '[Bug]: '
+labels: ['🐛 Bug']
+body:
+  - type: textarea
+    attributes:
+      label: 📄 버그 설명
+      description: 어떤 문제가 발생했는지 명확하고 간결하게 설명해주세요.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: ✅ 재현 절차
+      description: 버그가 어떻게 발생했는지 단계별로 상세히 작성해주세요.
+      placeholder: 최대한 세분화 해서 적어주세요!
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 🔍 실행 환경
+      description: 버그가 발생한 환경을 작성해주세요.
+      placeholder: 예) OS, 브라우저, 디바이스 정보 등
+  - type: textarea
+    attributes:
+      label: 🙋🏻 추가 정보
+      description: 관련 로그, 콘솔 에러, 참고 자료 등 추가로 공유할 내용이 있다면 작성해주세요.

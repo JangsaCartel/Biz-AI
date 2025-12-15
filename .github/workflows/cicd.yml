@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+    branches: ["dev", "main"]
+  push:
+    branches: ["dev", "main"]
+
+concurrency:
+  group: biz-ai-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: Black (check)
+        run: black --check .
+
+      - name: Pytest
+        run: |
+          set +e
+          pytest -q
+          rc=$?
+          if [ "$rc" -eq 0 ]; then
+            exit 0
+          fi
+          if [ "$rc" -eq 5 ]; then
+            echo "No tests collected. Skipping."
+            exit 0
+          fi
+          exit $rc
