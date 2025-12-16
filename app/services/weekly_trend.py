@@ -49,12 +49,14 @@ def compute_weekly_tfidf_topk(
     top_k: int,
     max_df_ratio: float,
     min_df: int,
-) -> Tuple[List[Tuple[str, int]], Set[str]]:
+) -> Tuple[List[Tuple[str, int, int]], Set[str]]:
     """
     TopK(핫 키워드) = TF-IDF 점수(주차 전체 합산)로 산출
+    + freq(등장횟수)도 같이 제공
+
     - docs_tokens: 문서별 토큰 리스트(명사)
     - 반환:
-      1) TopK 리스트: (token, score_as_int)
+      1) TopK 리스트: (token, score_as_int, freq_as_int)
       2) 실제 사용된 자동 불용어 set (디버깅/확장용)
     """
     n_docs = len(docs_tokens)
@@ -64,13 +66,13 @@ def compute_weekly_tfidf_topk(
     df = build_df_table(docs_tokens)
     auto_stop = build_auto_stopwords(df=df, n_docs=n_docs, max_df_ratio=max_df_ratio, min_df=min_df)
 
-    # 불용어 제거 후, 문서별 TF 계산
+    # 불용어 제거 후 문서 구성
     docs_filtered: List[List[str]] = []
     for tokens in docs_tokens:
         filtered = [t for t in tokens if t not in auto_stop]
         docs_filtered.append(filtered)
 
-    # 불용어 제거 후 DF 다시 계산(선택 사항이지만 안정적)
+    # 불용어 제거 후 DF 다시 계산
     df2 = build_df_table(docs_filtered)
 
     # IDF 계산 (smoothing)
@@ -79,15 +81,20 @@ def compute_weekly_tfidf_topk(
     for tok, d in df2.items():
         idf[tok] = math.log((n_docs + 1) / (d + 1)) + 1.0
 
-    # TF-IDF 점수 합산 (주차 점수)
+    # TF-IDF 점수 합산(주차 점수) + freq 합산(주차 빈도)
     week_score: Dict[str, float] = defaultdict(float)
+    week_freq: Dict[str, int] = defaultdict(int)
 
     for tokens in docs_filtered:
         if not tokens:
             continue
+
         tf = Counter(tokens)
 
         for tok, cnt in tf.items():
+            # freq(등장 횟수)
+            week_freq[tok] += cnt
+
             # sublinear tf: 1 + log(cnt)
             tf_weight = 1.0 + math.log(cnt)
             week_score[tok] += tf_weight * idf.get(tok, 0.0)
@@ -98,9 +105,11 @@ def compute_weekly_tfidf_topk(
     # TopK
     sorted_items = sorted(week_score.items(), key=lambda x: x[1], reverse=True)[:top_k]
 
-    # score를 int로 내려서 응답 (보기 좋게)
-    # (원하면 float로 그대로 보내도 됨)
-    top = [(tok, int(round(score))) for tok, score in sorted_items]
+    # score는 int로 내려서 응답(보기 좋게)
+    top: List[Tuple[str, int, int]] = []
+    for tok, score in sorted_items:
+        top.append((tok, int(round(score)), int(week_freq.get(tok, 0))))
+
     return top, auto_stop
 
 
@@ -126,7 +135,6 @@ def _get_float_env(name: str) -> Optional[float]:
         return float(val)
     except ValueError:
         return None
-
 
 def choose_auto_stopword_params(n_posts: int) -> Tuple[float, int]:
     """

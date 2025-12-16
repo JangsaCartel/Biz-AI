@@ -23,7 +23,8 @@ class WeeklyAnalysisRequest(BaseModel):
 # Top 키워드 1개 항목
 class KeywordItem(BaseModel):
     keyword: str
-    count: int
+    score: int  # TF-IDF score (주차 전체 합산, int round)
+    freq: int  # 등장 횟수(주차 전체, 자동 불용어 제거 후)
 
 
 # 주간 분석 응답 모델
