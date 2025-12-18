@@ -161,14 +161,14 @@ def choose_auto_stopword_params(n_posts: int) -> Tuple[float, int]:
         max_df_ratio = 0.95
         min_df = 1
     elif n_posts < 30:
-        max_df_ratio = 0.90
+        max_df_ratio = 0.85
         min_df = 2
     elif n_posts < 100:
-        max_df_ratio = 0.85
-        min_df = 3
+        max_df_ratio = 0.75
+        min_df = 2
     else:
-        max_df_ratio = 0.85
-        min_df = 5
+        max_df_ratio = 0.70
+        min_df = 3
 
     # 일부만 환경변수로 override 하고 싶은 경우 처리
     if env_max_df_ratio is not None:
