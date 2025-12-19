@@ -31,4 +31,4 @@ class KeywordItem(BaseModel):
 class WeeklyAnalysisResponse(BaseModel):
     weekLabel: str
     topKeywords: List[KeywordItem]
-    wordcloudPngBase64: str  # data:image/png;base64,...
+    wordcloudPngBase64: Optional[str] = None

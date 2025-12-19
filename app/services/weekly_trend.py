@@ -136,6 +136,7 @@ def _get_float_env(name: str) -> Optional[float]:
     except ValueError:
         return None
 
+
 def choose_auto_stopword_params(n_posts: int) -> Tuple[float, int]:
     """
     posts 개수(n_posts)에 따라 자동 불용어 파라미터를 유연하게 조정한다.

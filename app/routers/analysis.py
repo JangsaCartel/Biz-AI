@@ -6,10 +6,11 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from app.schemas.analysis import WeeklyAnalysisRequest, WeeklyAnalysisResponse
 from app.services.text import tokenize_nouns
-from app.services.weekly_trend import compute_weekly_tfidf_topk, choose_auto_stopword_params
+from app.services.weekly_trend import choose_auto_stopword_params, compute_weekly_tfidf_topk
 from app.services.wordcloud import make_wordcloud_base64_png
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
+
 
 # -----------------------------
 # BE만 호출 가능하게: 간단 API Key 체크
@@ -31,11 +32,23 @@ def require_ai_key(x_ai_key: str = Header(..., alias="X-AI-KEY")) -> None:
             detail="Invalid X-AI-KEY",
         )
 
+
 # -----------------------------
 # API 엔드포인트
 # -----------------------------
-@router.post("/weekly", response_model=WeeklyAnalysisResponse, dependencies=[Depends(require_ai_key)])
+@router.post(
+    "/weekly",
+    response_model=WeeklyAnalysisResponse,
+    dependencies=[Depends(require_ai_key)],
+)
 def weekly_analysis(req: WeeklyAnalysisRequest):
+    if not req.posts:
+        return {
+            "weekLabel": req.weekLabel,
+            "topKeywords": [],
+            "wordcloudPngBase64": None,
+        }
+
     # posts 길이 기반으로 자동 튜닝(환경변수로 override 가능)
     max_df_ratio, min_df = choose_auto_stopword_params(len(req.posts))
 
@@ -60,10 +73,22 @@ def weekly_analysis(req: WeeklyAnalysisRequest):
         all_tokens.extend([t for t in tokens if t not in auto_stop])
 
     freq = dict(Counter(all_tokens))
-    wc_b64 = make_wordcloud_base64_png(freq)
+
+    wc_b64 = None
+    if freq:
+        wc_b64 = make_wordcloud_base64_png(freq)
+
+    MIN_POSTS = int(os.getenv("MIN_POSTS_FOR_WEEKLY", "10"))
+
+    if len(req.posts) < MIN_POSTS:
+        return {
+            "weekLabel": req.weekLabel,
+            "topKeywords": [],
+            "wordcloudPngBase64": None,
+        }
 
     return {
         "weekLabel": req.weekLabel,
-        "topKeywords": [{"keyword": k, "score": s, "freq": f} for k, s, f in top],
+        "topKeywords": [{"keyword": k, "score": int(round(s)), "freq": int(f)} for k, s, f in top],
         "wordcloudPngBase64": wc_b64,
     }

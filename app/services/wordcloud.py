@@ -77,7 +77,6 @@ def make_wordcloud_base64_png(freq: Dict[str, int]) -> Optional[str]:
         scale=2,
         background_color=None if transparent_bg else "white",
         mode="RGBA" if transparent_bg else "RGB",
-        
         max_words=100,
         prefer_horizontal=0.95,
         collocations=False,
