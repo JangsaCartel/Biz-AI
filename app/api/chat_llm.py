@@ -128,10 +128,13 @@ class AnswerStreamPayload(BaseModel):
 
     # 버튼 선택 흐름
     # 예: [{"label":"정책 관련","nodeId":"POLICY_ROOT"}, {"label":"자영업에 필요한 정책","nodeId":"POLICY_NEED"}]
-    trail: List[TrailItem] = []
+    trail: List[TrailItem] = Field(default_factory=list)
 
     # 추후 확장(업종/지역 등)
-    slotValues: Dict[str, Any] = {}
+    slotValues: Dict[str, Any] = Field(default_factory=dict)
+    
+    # 버튼 답변 이후 사용자가 입력한 후속 질문/답변
+    userText: str = ""
 
 
 class LlmStreamPayload(BaseModel):
@@ -166,6 +169,15 @@ def _build_structured_prompt(payload: AnswerStreamPayload) -> str:
         for k, v in payload.slotValues.items():
             lines.append(f"- {k}: {v}")
         lines.append("")
+        
+    # FOLLOWUP 입력이 있으면 프롬프트에 포함
+    user_text = (payload.userText or "").strip()
+    if user_text:
+        lines.append("[사용자 추가 입력]")
+        lines.append(user_text)
+        lines.append("")
+        lines.append("위 '사용자 추가 입력'을 반영해서, 이전 답변을 이어서 보완하라.")
+        lines.append("")
 
     # 출력 규칙(너가 원하는 톤/형식: 짧고 실무적)
     lines.append("[작성 규칙]")
@@ -174,12 +186,13 @@ def _build_structured_prompt(payload: AnswerStreamPayload) -> str:
     lines.append("- 발견 가능한 정보가 부족하면, 확인 질문은 최대 2개만.")
     lines.append("- 장문 금지. 표/체크리스트 중심.")
     lines.append("- 마크다운 문법(**, ###, *, |) 쓰지 말고 일반 텍스트로 작성.")
-    lines.append("- 목록은 '-' 또는 '1) 2) 3)' 형태만 사용.")
+    lines.append("- 마크다운 문법(**, ###, *, |) 쓰지 말고 일반 텍스트로 작성.")
+    lines.append("- 불릿은 반드시 '•'만 사용.")
     lines.append("")
     lines.append("[출력 포맷]")
     lines.append("1) 핵심 요약(2~3줄)")
     lines.append("2) 체크리스트(불릿 5~8개)")
-    lines.append("3) 다음 질문(최대 2개)")
+    lines.append("3) 추가로 확인하면 정확해지는 정보(선택)")
     lines.append("")
     lines.append("이제 위 포맷으로 답변을 작성하라.")
     return "\n".join(lines)
