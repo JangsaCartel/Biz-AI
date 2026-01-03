@@ -2,11 +2,11 @@
 import json
 import os
 import random
-import time
 import threading
+import time
 from typing import Any, Dict, Generator, List, Optional
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -22,7 +22,7 @@ GEMINI_MODEL = (os.getenv("GEMINI_MODEL") or "gemini-2.5-flash").strip()
 GEMINI_MAX_CONCURRENCY = int(os.getenv("GEMINI_MAX_CONCURRENCY", "2"))
 
 # 429 백오프(요청 시작 실패 시 재시도)
-GEMINI_MAX_RETRY = int(os.getenv("GEMINI_MAX_RETRY", "3"))          # 3회 권장
+GEMINI_MAX_RETRY = int(os.getenv("GEMINI_MAX_RETRY", "3"))  # 3회 권장
 GEMINI_BACKOFF_BASE_SEC = float(os.getenv("GEMINI_BACKOFF_BASE_SEC", "1.0"))  # 1.0
 GEMINI_BACKOFF_JITTER_SEC = float(os.getenv("GEMINI_BACKOFF_JITTER_SEC", "0.4"))  # 0~0.4
 
@@ -35,16 +35,19 @@ if not GEMINI_API_KEY:
 _GENAI_MODE = None
 _client = None
 
+
 def _init_gemini():
     global _GENAI_MODE, _client
 
     try:
         from google import genai as genai_new  # pip install google-genai
+
         _GENAI_MODE = "google-genai"
         _client = genai_new.Client(api_key=GEMINI_API_KEY)
         return
     except Exception:
         pass
+
 
 _init_gemini()
 
@@ -52,6 +55,7 @@ _init_gemini()
 # concurrency limiter (sync generator라 threading.Semaphore가 가장 안전)
 # -----------------------
 _SEM = threading.BoundedSemaphore(max(1, GEMINI_MAX_CONCURRENCY))
+
 
 def _extract_text(chunk: Any) -> str:
     if chunk is None:
@@ -66,7 +70,7 @@ def _extract_text(chunk: Any) -> str:
             return chunk["text"]
         try:
             c0 = (chunk.get("candidates") or [])[0]
-            parts = (((c0.get("content") or {}).get("parts")) or [])
+            parts = ((c0.get("content") or {}).get("parts")) or []
             if parts and isinstance(parts[0].get("text"), str):
                 return parts[0]["text"]
         except Exception:
@@ -74,10 +78,16 @@ def _extract_text(chunk: Any) -> str:
 
     return ""
 
+
 def _is_429(e: Exception) -> bool:
     # 최대한 SDK/버전 차이를 방어적으로 처리
     msg = str(e) or ""
-    if "429" in msg or "TooManyRequests" in msg or "RESOURCE_EXHAUSTED" in msg or "ResourceExhausted" in msg:
+    if (
+        "429" in msg
+        or "TooManyRequests" in msg
+        or "RESOURCE_EXHAUSTED" in msg
+        or "ResourceExhausted" in msg
+    ):
         return True
 
     status_code = getattr(e, "status_code", None)
@@ -103,36 +113,44 @@ def _is_429(e: Exception) -> bool:
 
     return False
 
+
 def _sse(obj: Dict[str, Any], event: Optional[str] = None) -> bytes:
     # event를 붙여도 FE가 data:만 읽어도 되고, 나중에 확장 가능
     head = f"event: {event}\n" if event else ""
     return (head + f"data: {json.dumps(obj, ensure_ascii=False)}\n\n").encode("utf-8")
 
+
 # --- at top-level ---
 _COOLDOWN_UNTIL = 0.0
 _COOLDOWN_LOCK = threading.Lock()
 
+
 def _now() -> float:
     return time.time()
+
 
 def _cooldown_seconds() -> float:
     # 429가 뜨면 짧게라도 숨 고르기 (환경변수로 조절 가능)
     return float(os.getenv("GEMINI_COOLDOWN_SEC", "10"))
+
 
 def _in_cooldown() -> float:
     with _COOLDOWN_LOCK:
         remain = _COOLDOWN_UNTIL - _now()
     return max(0.0, remain)
 
+
 def _set_cooldown(sec: float):
     global _COOLDOWN_UNTIL
     with _COOLDOWN_LOCK:
         _COOLDOWN_UNTIL = max(_COOLDOWN_UNTIL, _now() + sec)
 
+
 def _sleep_backoff(attempt: int):
-    base = GEMINI_BACKOFF_BASE_SEC * (2 ** attempt)
+    base = GEMINI_BACKOFF_BASE_SEC * (2**attempt)
     jitter = random.random() * GEMINI_BACKOFF_JITTER_SEC
     time.sleep(base + jitter)
+
 
 def _open_stream(prompt: str):
     try:
@@ -145,6 +163,7 @@ def _open_stream(prompt: str):
             model=GEMINI_MODEL,
             contents=[prompt],
         )
+
 
 def _stream_generate(prompt: str) -> Generator[str, None, None]:
     # 상위(gen)에서 처리하기 쉽게 RuntimeError로 던짐
@@ -175,12 +194,14 @@ def _stream_generate(prompt: str) -> Generator[str, None, None]:
 
     raise last_err
 
+
 # -----------------------
 # Payload models
 # -----------------------
 class TrailItem(BaseModel):
     label: str = ""
     nodeId: Optional[str] = None
+
 
 class AnswerStreamPayload(BaseModel):
     promptKey: str = Field(..., min_length=1)
@@ -189,12 +210,15 @@ class AnswerStreamPayload(BaseModel):
     slotValues: Dict[str, Any] = Field(default_factory=dict)
     userText: str = ""
 
+
 class LlmStreamPayload(BaseModel):
     text: str = Field(..., min_length=1)
+
 
 # -----------------------
 # Prompt builder
 # -----------------------
+
 
 def _common_format_rules_block() -> str:
     lines: List[str] = []
@@ -211,8 +235,12 @@ def _common_format_rules_block() -> str:
     lines.append("2) 체크리스트(불릿 5~8개)")
     lines.append("3) 추가로 확인하면 정확해지는 정보(선택)")
     lines.append("")
-    lines.append("중요: 최종 출력은 반드시 위 1)~3)만 작성하고, 그 외 설명/서론/제목/여백을 추가하지 말 것.")
+    lines.append(
+        "중요: 최종 출력은 반드시 위 1)~3)만 작성하고,"
+        " 그 외 설명/서론/제목/여백을 추가하지 말 것."
+    )
     return "\n".join(lines)
+
 
 def _build_structured_prompt(payload: AnswerStreamPayload) -> str:
     lines: List[str] = []
@@ -251,7 +279,7 @@ def _build_structured_prompt(payload: AnswerStreamPayload) -> str:
     lines.append(_common_format_rules_block())
     return "\n".join(lines)
 
-    
+
 def _parse_json_body_with_fallback(raw: bytes) -> Dict[str, Any]:
     try:
         return json.loads(raw.decode("utf-8"))
@@ -269,6 +297,7 @@ def _parse_json_body_with_fallback(raw: bytes) -> Dict[str, Any]:
         detail="Invalid JSON or encoding. Send UTF-8 JSON (recommended).",
     )
 
+
 # -----------------------
 # ANSWER stream endpoint (버튼 선택 기반)
 # -----------------------
@@ -284,7 +313,10 @@ async def answer_stream(request: Request):
         # 동시 스트림 제한: 바로 실패시키고 FE에 안내(무한 대기 방지)
         if not _SEM.acquire(blocking=False):
             yield _sse(
-                {"error": {"code": 503, "message": "요청이 많아 잠시 후 다시 시도해주세요."}, "done": True},
+                {
+                    "error": {"code": 503, "message": "요청이 많아 잠시 후 다시 시도해주세요."},
+                    "done": True,
+                },
                 event="error",
             )
             return
@@ -297,14 +329,25 @@ async def answer_stream(request: Request):
             if _is_429(e):
                 yield _sse(
                     {
-                        "error": {"code": 429, "message": "요청이 많아 일시적으로 제한됐어요. 잠시 후 다시 시도해주세요."},
+                        "error": {
+                            "code": 429,
+                            "message": (
+                                "요청이 많아 일시적으로 제한됐어요." "잠시 후 다시 시도해주세요."
+                            ),
+                        },
                         "done": True,
                     },
                     event="error",
                 )
             else:
                 yield _sse(
-                    {"error": {"code": 500, "message": str(e) or "AI 응답 생성 중 오류가 발생했어요."}, "done": True},
+                    {
+                        "error": {
+                            "code": 500,
+                            "message": str(e) or "AI 응답 생성 중 오류가 발생했어요.",
+                        },
+                        "done": True,
+                    },
                     event="error",
                 )
         finally:
@@ -316,6 +359,7 @@ async def answer_stream(request: Request):
         "X-Accel-Buffering": "no",
     }
     return StreamingResponse(gen(), media_type="text/event-stream", headers=headers)
+
 
 # -----------------------
 # Free LLM stream endpoint (자유 질문)
@@ -339,7 +383,10 @@ async def llm_stream(request: Request):
     def gen() -> Generator[bytes, None, None]:
         if not _SEM.acquire(blocking=False):
             yield _sse(
-                {"error": {"code": 503, "message": "요청이 많아 잠시 후 다시 시도해주세요."}, "done": True},
+                {
+                    "error": {"code": 503, "message": "요청이 많아 잠시 후 다시 시도해주세요."},
+                    "done": True,
+                },
                 event="error",
             )
             return
@@ -352,14 +399,25 @@ async def llm_stream(request: Request):
             if _is_429(e):
                 yield _sse(
                     {
-                        "error": {"code": 429, "message": "요청이 많아 일시적으로 제한됐어요. 잠시 후 다시 시도해주세요."},
+                        "error": {
+                            "code": 429,
+                            "message": (
+                                "요청이 많아 일시적으로 제한됐어요." "잠시 후 다시 시도해주세요."
+                            ),
+                        },
                         "done": True,
                     },
                     event="error",
                 )
             else:
                 yield _sse(
-                    {"error": {"code": 500, "message": str(e) or "AI 응답 생성 중 오류가 발생했어요."}, "done": True},
+                    {
+                        "error": {
+                            "code": 500,
+                            "message": str(e) or "AI 응답 생성 중 오류가 발생했어요.",
+                        },
+                        "done": True,
+                    },
                     event="error",
                 )
         finally:

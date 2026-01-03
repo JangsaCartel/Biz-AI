@@ -1,15 +1,15 @@
 import os
+
 from dotenv import load_dotenv
-
-# .env 로컬 환경변수 로드
-load_dotenv()
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers.analysis import router as analysis_router
-from app.api.chat_nodes import router as chat_nodes_router
 from app.api.chat_llm import router as chat_llm_router
+from app.api.chat_nodes import router as chat_nodes_router
+from app.routers.analysis import router as analysis_router
+
+# .env 로컬 환경변수 로드
+load_dotenv()
 
 # FastAPI 앱 생성 + CORS 설정
 app = FastAPI(title="Biz-AI")
