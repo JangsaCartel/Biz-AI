@@ -9,3 +9,5 @@ kiwipiepy
 wordcloud
 pillow
 numpy
+httpx
+google-genai
