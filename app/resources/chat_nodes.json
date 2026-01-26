@@ -1,0 +1,227 @@
+{
+  "ROOT": {
+    "type": "CHOICE",
+    "title": "안녕하세요! Biz입니다. 무엇을 도와드릴까요?",
+    "options": [
+      { "label": "정책 관련", "next": "POLICY_ROOT" },
+      { "label": "대출 관련", "next": "LOAN_ROOT" },
+      { "label": "기본 정보 및 팁", "next": "TIPS_ROOT" },
+      { "label": "금융 및 세무 사항", "next": "TAX_ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "POLICY_ROOT": {
+    "type": "CHOICE",
+    "title": "정책 관련 세부 사항을 선택해주세요.",
+    "options": [
+      { "label": "자영업에 필요한 정책", "next": "POLICY_NEED" },
+      { "label": "사업 시 주의해야할 정책", "next": "POLICY_CAUTION" },
+      { "label": "그 외", "next": "POLICY_ETC" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "POLICY_NEED": {
+    "type": "ANSWER_LLM",
+    "title": "자영업에 필요한 정책",
+    "promptKey": "POLICY_NEED",
+    "slots": ["industry", "region", "stage", "userId"],
+    "afterOptions": [
+      { "label": "다른 정책 메뉴 보기", "next": "POLICY_ROOT" },
+      { "label": "메뉴로", "next": "ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "POLICY_CAUTION": {
+    "type": "ANSWER_STATIC",
+    "title": "사업 시 주의해야할 정책",
+    "content": "운영 중 자주 놓치는 정책/의무사항 체크리스트를 안내할게요.\n\n- 지원금/정책은 '모집 요건'과 '사후 정산' 조건을 꼭 확인\n- 동일 목적 중복지원 가능 여부 확인\n- 제출 서류(매출 증빙/사업자 상태) 유효기간 확인\n- 공고 마감일 기준(서류 제출/접수 완료) 확인\n\n원하시면 업종/지역 기준으로 더 구체화해드릴까요?",
+    "afterOptions": [
+      { "label": "자영업에 필요한 정책 보기", "next": "POLICY_NEED" },
+      { "label": "메뉴로", "next": "ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "POLICY_ETC": {
+    "type": "CHOICE",
+    "title": "정책에서 어떤 게 궁금하세요?",
+    "options": [
+      { "label": "지원 대상/요건 확인", "next": "POLICY_ETC_ELIG" },
+      { "label": "신청/서류 준비", "next": "POLICY_ETC_DOCS" },
+      { "label": "메뉴로", "next": "ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "POLICY_ETC_ELIG": {
+    "type": "ANSWER_STATIC",
+    "title": "지원 대상/요건",
+    "content": "지원요건은 보통 '업종/사업자 상태/매출·상시근로자/지역'으로 갈려요.\n\n업종, 지역, 사업자 형태(개인/법인), 매출 규모를 알려주면 더 정확히 안내할게요.",
+    "afterOptions": [
+      { "label": "정책 메뉴로", "next": "POLICY_ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "POLICY_ETC_DOCS": {
+    "type": "ANSWER_STATIC",
+    "title": "신청/서류 준비",
+    "content": "정책 신청은 '접수 → 서류 → 선정 → 협약/집행 → 정산' 흐름이 흔해요.\n\n대부분 기본 서류:\n- 사업자등록증\n- 매출 증빙(부가세 신고/카드매출 등)\n- 대표자 신분증\n- 통장 사본\n- (필요 시) 임대차 계약서/4대보험 가입자 명부\n\n어떤 정책을 신청하려는지(공고명/링크)가 있으면 체크리스트로 정리해줄게요.",
+    "afterOptions": [
+      { "label": "정책 메뉴로", "next": "POLICY_ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "LOAN_ROOT": {
+    "type": "CHOICE",
+    "title": "대출 관련 세부 사항을 선택해주세요.",
+    "options": [
+      { "label": "맞춤형 대출 제안", "next": "LOAN_RECO" },
+      { "label": "대출에 관한 설명", "next": "LOAN_GUIDE" },
+      { "label": "그 외", "next": "LOAN_ETC" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "LOAN_RECO": {
+    "type": "ANSWER_LLM",
+    "title": "맞춤형 대출 제안",
+    "promptKey": "LOAN_RECO",
+    "slots": ["purpose", "amountRange", "businessAge", "region", "userId"],
+    "afterOptions": [
+      { "label": "대출 설명 보기", "next": "LOAN_GUIDE" },
+      { "label": "메뉴로", "next": "ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "LOAN_GUIDE": {
+    "type": "ANSWER_STATIC",
+    "title": "대출 기본 설명",
+    "content": "자영업자 대출은 보통 아래 기준으로 비교해요.\n\n- 금리(고정/변동), 상환 방식(원리금/만기일시)\n- 보증기관 연계 여부(보증료 포함 총비용)\n- 중도상환수수료/거치기간\n- 사업기간·매출 증빙 가능 여부\n\n원하시면 '현재 상황(사업기간/매출/자금 용도)'에 맞게 체크리스트로 정리해드릴게요.",
+    "afterOptions": [
+      { "label": "맞춤형 대출 제안", "next": "LOAN_RECO" },
+      { "label": "메뉴로", "next": "ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "LOAN_ETC": {
+    "type": "ANSWER_STATIC",
+    "title": "대출 관련 기타",
+    "content": "대출 관련으로는 '한도/금리/서류/상환' 중 뭐가 궁금하세요?\n\n그대로 질문해주시면 정리해드릴게요.",
+    "afterOptions": [
+      { "label": "그 외 질문", "next": "LLM_FREE" },
+      { "label": "메뉴로", "next": "ROOT" }
+    ]
+  },
+
+  "TIPS_ROOT": {
+    "type": "CHOICE",
+    "title": "기본 정보 및 팁을 선택해주세요.",
+    "options": [
+      { "label": "업종별 최신 트렌드", "next": "TIPS_TREND" },
+      { "label": "창업/운영 팁", "next": "TIPS_OPERATE" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "TIPS_TREND": {
+    "type": "ANSWER_LLM",
+    "title": "업종별 최신 트렌드",
+    "promptKey": "TIPS_TREND",
+    "slots": ["industry", "week", "region"],
+    "afterOptions": [
+      { "label": "운영 팁 보기", "next": "TIPS_OPERATE" },
+      { "label": "메뉴로", "next": "ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "TIPS_OPERATE": {
+    "type": "CHOICE",
+    "title": "어떤 운영 팁이 필요하세요?",
+    "options": [
+      { "label": "마케팅 방법", "next": "TIPS_MARKETING" },
+      { "label": "배달 수수료 줄이기", "next": "TIPS_DELIVERY_FEE" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "TIPS_MARKETING": {
+    "type": "ANSWER_STATIC",
+    "title": "마케팅 팁",
+    "content": "바로 적용 가능한 순서로 정리해드릴게요.\n\n1) 고객이 다시 오게 만드는 '재방문 장치' 먼저(쿠폰/스탬프/단골 혜택)\n2) 리뷰를 늘릴 트리거 만들기(포장/배달 동봉 카드)\n3) 메뉴판/배너는 '한 문장'으로 강점 고정\n4) SNS는 주 2~3회, 포맷을 고정(메뉴/후기/제조과정)\n\n업종을 알려주면 문구 예시까지 맞춰서 뽑아드릴까요?",
+    "afterOptions": [
+      { "label": "운영 팁으로", "next": "TIPS_OPERATE" },
+      { "label": "메뉴로", "next": "ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "TIPS_DELIVERY_FEE": {
+    "type": "ANSWER_STATIC",
+    "title": "배달 수수료 줄이기",
+    "content": "수수료는 '주문 유입 채널'을 나눌수록 줄이기 쉬워요.\n\n- 단골은 직접 채널로 유도(전화/자체 링크/단골쿠폰)\n- 배달앱은 신규 유입용으로 역할 분리\n- 인기 메뉴는 '세트'로 묶어 객단가를 올려 수수료 체감 감소\n- 포장 할인/픽업 보상으로 배달 비중 조절\n\n현재 배달 비중(%)이 어느 정도인지 알려주면 더 현실적으로 제안할게요.",
+    "afterOptions": [
+      { "label": "운영 팁으로", "next": "TIPS_OPERATE" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "TAX_ROOT": {
+    "type": "CHOICE",
+    "title": "금융 및 세무 사항을 선택해주세요.",
+    "options": [
+      { "label": "부가가치세", "next": "TAX_VAT" },
+      { "label": "현금영수증 발행", "next": "TAX_CASH" },
+      { "label": "세금계산서/매출증빙", "next": "TAX_INVOICE" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "TAX_VAT": {
+    "type": "ANSWER_STATIC",
+    "title": "부가가치세",
+    "content": "부가세는 '매출세액 - 매입세액(공제)' 구조예요.\n\n- 신고 주기(일반/간이) 확인\n- 공제 가능한 매입(사업 관련 지출) 증빙 챙기기\n- 카드/현금영수증/세금계산서 등 증빙 형태 정리\n\n간단히: 업종, 과세유형(일반/간이), 매출 규모를 알려주면 체크 포인트를 줄여서 안내할게요.",
+    "afterOptions": [
+      { "label": "세무 메뉴로", "next": "TAX_ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "TAX_CASH": {
+    "type": "ANSWER_STATIC",
+    "title": "현금영수증 발행",
+    "content": "현금 거래 시 현금영수증 발행은 매출 누락 방지/소득공제 연결 때문에 중요해요.\n\n- 고객 요청 시: 휴대폰번호/카드번호로 발행\n- 사업자 지출: 지출증빙용으로 받기\n- 발행 누락 시 가산세 이슈가 생길 수 있어요.\n\n어떤 상황(매장/배달/포장)에서 발행이 막히는지 말해주면 케이스별로 안내할게요.",
+    "afterOptions": [
+      { "label": "세무 메뉴로", "next": "TAX_ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "TAX_INVOICE": {
+    "type": "ANSWER_STATIC",
+    "title": "세금계산서/매출증빙",
+    "content": "거래 형태에 따라 증빙이 달라요.\n\n- B2B 공급: 세금계산서\n- 일반 소비자 판매: 카드전표/현금영수증\n- 지출: (가능하면) 사업자 지출증빙용 현금영수증/세금계산서\n\n거래 상대가 사업자인지(사업자등록번호 제공 여부)부터 확인해보면 좋아요.",
+    "afterOptions": [
+      { "label": "세무 메뉴로", "next": "TAX_ROOT" },
+      { "label": "그 외 질문", "next": "LLM_FREE" }
+    ]
+  },
+
+  "LLM_FREE": {
+    "type": "LLM_MODE",
+    "title": "좋아요. 자유롭게 질문해주세요!",
+    "hintExamples": [
+      "배달 비중이 높은데 수익이 안 남아요. 뭘 먼저 손봐야 할까요?",
+      "사업자 등록 후 처음 부가세 신고 준비는 어떻게 하죠?",
+      "우리 업종(카페/미용실 등)에 요즘 트렌드는 뭐예요?"
+    ],
+    "afterOptions": [{ "label": "메뉴로", "next": "ROOT" }]
+  }
+}
